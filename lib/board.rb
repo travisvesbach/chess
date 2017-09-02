@@ -1,26 +1,20 @@
-#require_relative "game.rb"
-require "json"
-
 class Board
 
 	attr_accessor :board, :positions
 
-	def initialize(json = false)
-		if json == false
+	def initialize(board = false, positions = false)
+		if board == false
 			@board = Hash.new
-			@positions = []
+			@positions = Array.new
 			make_board
 		else
-			@turn = from_json
-#			@board = board
-#			@positions = positions
-#			@board.each do |key, value|
-#				puts "#{key} #{value}"
-#			end
+			@board = board
+			@positions = positions
 		end
 
 	end
 
+	#Makes the initial board, and sets the starting positions
 	def make_board
 		(1..8).each do |x|
             (1..8).each do |y|
@@ -65,6 +59,7 @@ class Board
         get_all_moves
 	end
 
+	#Checks to see if target for a move is out of bounds, free, occuppied by a friend or foe
 	def valid_move(target, color, board, positions)
 		if positions.include?(target)
 			if board[target].symbol != " "
@@ -82,6 +77,7 @@ class Board
 		end
 	end
 
+	#Checks to see if the piece is the proper color
 	def valid_piece(piece, color)
 		if @board[piece].class != Square and @board[piece].color == color
 			return piece
@@ -90,6 +86,7 @@ class Board
 		end
 	end
 
+	#Checks to see if the target for a move from a user is on that piece's move list
 	def check_target(piece, target)
 		if @board[piece].moves.include?(target)
 			return target
@@ -98,12 +95,14 @@ class Board
 		end
 	end
 
+	#Fills the moves array for each piece on the board with all of its available moves
 	def get_all_moves
 		@board.each do |key, piece|
 			piece.get_moves(key, @board, @positions) unless piece.class == Square
 		end
 	end
 
+	#Moves on piece on the board to another and checks to se if that team's King is put into check.  If yes, it returns to it's previous position.
 	def move(piece, target, color)
 		target_holder = @board[target]
 		current_holder = @board[piece]
@@ -124,6 +123,7 @@ class Board
 		true
 	end
 
+	#Used to test a move and see if it causes check or not and then returns the piece back to where is started.  Used to help determin if the board is in check or checkmate. 
 	def test_move(piece, target, color)
 		target_holder = @board[target]
 		current_holder = @board[piece]
@@ -133,13 +133,14 @@ class Board
 		@board[piece] = Square.new
 		check_for_pawn_at_end		
 		get_all_moves
-		result = king_in_check(color) #returns true or false
+		result = king_in_check(color)
 		@board[piece] = current_holder
 		@board[target] = target_holder
 		get_all_moves
 		result
 	end
 
+	#Checks to see if the King of the given color is in check.
 	def king_in_check(color)
 		king = false
 		@board.each do |key, piece| 
@@ -150,7 +151,6 @@ class Board
 		@board.each do |key, piece|
 			if piece.color != color and piece.moves.include?(@board[king].position)
 				puts "in check from #{piece.symbol} at #{key.to_s}"
-				puts "this pieces moves are #{piece.moves.to_s}"
 				puts "and the king is at #{king.to_s}"
 				return true	
 			end
@@ -158,11 +158,10 @@ class Board
 		return false
 	end
 
+	#Engine for checking to see if King of the given color is in check or checkmate.
 	def check_or_checkmate(color)
-		puts "entering check_or_checkmate"
 		if king_in_check(color)
 			result = move_other_to_block(color)
-			puts "result from move_other_to_block #{result}"
 			return 'CHECK' if result == false
 			result = move_king_to_stop_check(color)
 			return result
@@ -170,6 +169,7 @@ class Board
 		false
 	end
 
+	#Checks to see if a piece with the same color as the king in check and move in to block the check.
 	def move_other_to_block(color)
 		@board.each do |key, piece|
 			if piece.color == color and piece.class != King
@@ -183,6 +183,7 @@ class Board
 		return 'CHECK'
 	end
 
+	#Checks to see if the king that is in check can move out of check.
 	def move_king_to_stop_check(color)
 		king = false
 		@board.each do |key, piece|
@@ -191,15 +192,13 @@ class Board
 			end
 		end
 		king.moves.each do |target|
-			puts "checking king move for check: #{target}"
-			result = test_move(king.position, target, color) # returns true or false
-			puts "result is #{result}"
+			result = test_move(king.position, target, color)
 			return 'CHECK' if result == false
 		end
 		return 'CHECKMATE'
 	end
 
-
+	#Checks to see if a Pawn has reached the opposite end of the board.  If so, it turns that Pawn into a Queen.
 	def check_for_pawn_at_end
 		ends = [[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[1,8],[2,8],[3,8],[4,8],[5,8],[6,8],[7,8],[8,8]]
 		ends.each do |position|
@@ -210,7 +209,7 @@ class Board
 		end
 	end
 
-
+	#Displays the board.
 	def show
 		puts "  ------------------------- "
 		puts "8 |#{@board[[1,1]].symbol} |#{@board[[2,1]].symbol} |#{@board[[3,1]].symbol} |#{@board[[4,1]].symbol} |#{@board[[5,1]].symbol} |#{@board[[6,1]].symbol} |#{@board[[7,1]].symbol} |#{@board[[8,1]].symbol} |"
@@ -232,24 +231,6 @@ class Board
 		puts "   a |b |c |d |e |f |g |h  "
 	end
 
-	#loads a previously saved game's variables 
-	def from_json
-		data = JSON.load File.read("save.json")
-		@board = data["board"]
-		@positions = data["positions"]
-		current_turn = data["current_turn"]
-		current_turn
-	end	
-
-	#saves the current game
-	def to_json(current_turn)
-		File.write("save.json", JSON.dump({
-			:board => @board,
-			:positions => @positions,
-			:current_turn => current_turn,
-			}))
-	end
-
 end
 
 class Pawn < Board
@@ -266,6 +247,7 @@ class Pawn < Board
 		end
 	end
 
+	#Gets available moves for the Pawn
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
@@ -327,6 +309,7 @@ class Rook < Board
 		end
 	end
 
+	#Gets available moves for the Rook
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
@@ -410,6 +393,7 @@ class Knight < Board
 		end
 	end
 
+	#Gets available moves for the Knight
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
@@ -444,6 +428,7 @@ class Bishop < Board
 		end
 	end
 
+	#Gets available moves for the Bishop
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
@@ -533,6 +518,7 @@ class Queen < Board
 		end
 	end
 
+	#Gets available moves for the Queen
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
@@ -685,6 +671,7 @@ class King < Board
 		end
 	end
 
+	#Gets available moves for the King
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new

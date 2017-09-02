@@ -6,6 +6,7 @@ class Ai
 		@board = Board.new
 	end
 
+	#The AI searches for a random piece and a random move and sends it to the board. If it fails, it tries again.
 	def move(board)
 		good = false
 		until good == true
@@ -17,12 +18,10 @@ class Ai
 				end
 			end
 			ai_pieces.each do |piece|
-				puts "ai pieces #{piece.to_s} #{@board.board[piece].symbol} with move: #{@board.board[piece].moves.to_s}"
 			end
 			piece_to_move = ai_pieces[rand(ai_pieces.length)]
 			puts "Ai piece to move is #{board[piece_to_move].symbol} #{board[piece_to_move].position}"
 			available_moves = board[piece_to_move].moves
-			puts "available moves are #{available_moves}"
 			if available_moves.length > 0
 				target = available_moves[rand(available_moves.length)]
 				puts "target is #{target}"

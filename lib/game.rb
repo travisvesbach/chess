@@ -1,6 +1,7 @@
 require_relative "board.rb"
 require_relative "ai.rb"
 require "json"
+require "yaml"
 
 class Game
 
@@ -9,7 +10,7 @@ class Game
 	def initialize
 		@current_turn = false
 		@player_one = 'white'
-		@player_two = 'black'
+		@player_two = false
 		@ai_on = false
 		@ai_color = 'black'
 		menu
@@ -43,13 +44,15 @@ class Game
 			clear_screen
 			game_engine
 		when 'save'
-			to_json
+#			to_json
+			to_yaml
 			clear_screen
 			puts ">Game saved<"
 			menu
 		when 'load'
 			@board = Board.new
-			from_json
+#			from_json
+			from_yaml
 #			clear_screen
 			puts @board
 #			puts @board.board
@@ -90,37 +93,37 @@ class Game
 		end
 	end
 
-	#loads a previously saved game's variables 
-	def from_json
-#		data = JSON.parse File.read("save.json")
-#		@board = Board.new(data["board"], data["positions"]),
-#		@current_turn = data["current_turn"]
-#		@ai_on = data["ai_on"]
-		@board = Board.new(true)
-		@current_turn = @board.turn
-	end	
-
-	#saves the current game
-	def to_json
-		@board.to_json(@current_turn)
-#		File.write("save.json", JSON.dump({
-#			:board => @board.board,
-#			:positions => @board.positions,
-#			:current_turn => @current_turn,
-#			:ai_on => @ai_on
-#			}))
+	#Saves the current game state
+	def to_yaml
+		File.write("save.yaml", YAML.dump({
+			:board => @board.board,
+			:positions => @board.positions,
+			:current_turn => @current_turn,
+			:ai_on => @ai_on
+			}))
 	end
 
+	#Loads a previously saved game
+	def from_yaml
+		data = YAML.load File.read("save.yaml")
+		@board = Board.new(data[:board], data[:positions])
+		@current_turn = data[:current_turn]
+		@ai_on = data[:ai_on]		
+	end
+
+	#Main engine that runs the game
 	def game_engine
 		if @ai_on == true
 			game_with_ai
 		else
+			@player_two = 'black'
 			game_with_two_players
 		end
 		announce_winner
 		end_of_game
 	end
 
+	#Takes turns between the player and AI until checkmate
 	def game_with_ai
 		@current_turn = @player_one
 		finish = false
@@ -139,6 +142,7 @@ class Game
 		end
 	end
 
+	#Takes turns between two players until checkmate
 	def game_with_two_players
 		@current_turn = @player_one if @current_turn == false
 		finish = false
@@ -155,6 +159,7 @@ class Game
 		end
 	end
 
+	#Move function for interacting with the user(s)
 	def move
 		piece = false
 		target = false
@@ -197,6 +202,7 @@ class Game
 		false
 	end
 
+	#Converts the user input into the format used by the Board class.
 	def convert_input_into_location(input)
 		x = input[0]
 		case x
@@ -243,6 +249,7 @@ class Game
 		[x,y]
 	end
 
+	#Calls the check/chackmate functions from the board class outputs the result
 	def check_or_checkmate(color)
 		result = @board.check_or_checkmate(color)
 		if result == 'CHECK' or result == 'CHECKMATE'
@@ -251,22 +258,24 @@ class Game
 		result
 	end
 
+	#Outputs the winner of the game
 	def announce_winner
 		@board.show
 		case @current_turn
 		when @player_one
 			if @ai == false
-				puts "Player 2 is the winner!"
+				puts "Checkmate! Player 2 is the winner!"
 			elsif @ai == true
-				puts "The computer is the winner!"
+				puts "Checkmate! The computer is the winner!"
 			end
 		when @player_two
-			puts "Player 1 is the winner!"
+			puts "Checkmate! Player 1 is the winner!"
 		when @ai_color
-			puts "You are the winner!"
+			puts "Checkmate! You are the winner!"
 		end
 	end
 
+	#Asks if the user(s) would like to play a new game.
 	def end_of_game
 		puts ""
 		puts "Would you like to play again? [Y]es or [N]o"
