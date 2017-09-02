@@ -112,9 +112,7 @@ class Board
 		check_for_pawn_at_end		
 		get_all_moves
 		result = king_in_check(color)
-		puts "king_in_check result is #{result}"
 		if king_in_check(color) == true
-			puts "resetting positions"
 			@board[piece] = current_holder
 			@board[target] = target_holder
 			get_all_moves
@@ -127,8 +125,6 @@ class Board
 	def test_move(piece, target, color)
 		target_holder = @board[target]
 		current_holder = @board[piece]
-		puts "testing #{@board[piece].symbol}"
-		puts "moves are #{@board[piece].moves.to_s}"
 		@board[target] = @board[piece]
 		@board[piece] = Square.new
 		check_for_pawn_at_end		
@@ -150,8 +146,6 @@ class Board
 		end
 		@board.each do |key, piece|
 			if piece.color != color and piece.moves.include?(@board[king].position)
-				puts "in check from #{piece.symbol} at #{key.to_s}"
-				puts "and the king is at #{king.to_s}"
 				return true	
 			end
 		end
@@ -175,7 +169,6 @@ class Board
 			if piece.color == color and piece.class != King
 				piece.moves.each do |target| 
 					result = test_move(key, target, color)
-					print "testing #{target} result: #{result}"
 					return false if result == false
 				end
 			end
@@ -675,7 +668,7 @@ class King < Board
 	def get_moves(position, board, positions)
 		@position = position
 		@moves = Array.new
-		move_path = [[-1,1],[0,1],[1,1],[0,-1],[0,1],[-1,-1],[-1,0],[1,-1]]
+		move_path = [[-1,-1],[0,-1],[-1,1],[-1,0],[1,0],[-1,1],[0,1],[1,1]]
 		move_path.each do |x,y|
 			move_x = @position[0] + x
 			move_y = @position[1] + y

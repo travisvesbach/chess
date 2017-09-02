@@ -18,6 +18,7 @@ class Game
 
 	#the main menu, from which the user can choose what to do
 	def menu
+		clear_screen
 		puts "------"
 		puts "Chess!"
 		puts "------"
@@ -25,7 +26,7 @@ class Game
 		puts ""
 		puts "Enter one of the following:"
 		puts "New"
-		if @board
+		if @current_turn != false
 			puts "Resume"
 			puts "Save"
 		end
@@ -44,18 +45,14 @@ class Game
 			clear_screen
 			game_engine
 		when 'save'
-#			to_json
 			to_yaml
 			clear_screen
 			puts ">Game saved<"
 			menu
 		when 'load'
 			@board = Board.new
-#			from_json
 			from_yaml
-#			clear_screen
-			puts @board
-#			puts @board.board
+			clear_screen
 			puts ">Game loaded<"
 			game_engine
 		when 'quit'
@@ -125,13 +122,9 @@ class Game
 
 	#Takes turns between the player and AI until checkmate
 	def game_with_ai
-		@current_turn = @player_one
-		finish = false
+		@current_turn = @player_one if @current_turn == false
 		@ai = Ai.new
-		until finish
-			puts @current_turn
-			@board.show
-			return if check_or_checkmate(@current_turn) == "CHECKMATE"
+		until check_or_checkmate(@current_turn) == "CHECKMATE"
 			if @current_turn == @player_one
 				move
 				@current_turn = @ai_color
@@ -139,23 +132,21 @@ class Game
 				@board = @ai.move(@board.board)
 				@current_turn = @player_one
 			end
+			clear_screen
 		end
 	end
 
 	#Takes turns between two players until checkmate
 	def game_with_two_players
 		@current_turn = @player_one if @current_turn == false
-		finish = false
-		until finish
-			puts @current_turn
-			@board.show
-			return if check_or_checkmate(@current_turn) == "CHECKMATE"
-			finish = move
+		until check_or_checkmate(@current_turn) == "CHECKMATE"
+			move
 			if @current_turn == @player_one
 				@current_turn = @player_two
 			elsif @current_turn == @player_two
 				@current_turn = @player_one
 			end
+			clear_screen
 		end
 	end
 
@@ -164,19 +155,24 @@ class Game
 		piece = false
 		target = false
 		until piece != false
-			puts "Select a piece (ex: [b1]) or enter [menu] for the menu."
-			input = gets.chomp.downcase
-			case input
+			@board.show
+			puts ""
+			puts "#{@current_turn.capitalize}: Select a piece (ex: [b1]) or enter [menu]."
+			piece_input = gets.chomp.downcase
+			case piece_input
 			when "menu"
 				menu
 			else
-				piece = convert_input_into_location(input)
+				piece = convert_input_into_location(piece_input)if piece_input.length == 2
 				piece = @board.valid_piece(piece, @current_turn) if piece != false
 			end
-			error if piece == false
+			if piece == false
+				clear_screen
+				error
+			end
 		end
 		until target != false
-			puts "Select a destination or enter [back] for back or [menu] for the menu."
+			puts "Select a destination, or enter [back] or [menu]."
 			input = gets.chomp.downcase
 			case input
 			when "menu"
@@ -185,18 +181,20 @@ class Game
 				move
 				return
 			else
-				target = convert_input_into_location(input)
-				puts "Piece = #{piece}"
-				puts "Target = #{target}"
+				target = convert_input_into_location(input)if input.length == 2
 				target = @board.check_target(piece, target) if target != false
-				puts "Target = #{target}"
 			end
-			error if piece == false
+			if target == false
+				clear_screen
+				error
+				@board.show
+				puts "Currently selected piece: #{piece_input}"
+			end
 		end
 		if @board.move(piece, target, @current_turn) == false
 			clear_screen
 			error
-			@board.show
+			check_or_checkmate(@current_turn)
 			move
 		end
 		false
@@ -253,7 +251,9 @@ class Game
 	def check_or_checkmate(color)
 		result = @board.check_or_checkmate(color)
 		if result == 'CHECK' or result == 'CHECKMATE'
-			puts "You are in #{result}!"
+			puts ""
+			puts "#{result}!"
+			puts ""
 		end
 		result
 	end
@@ -261,6 +261,8 @@ class Game
 	#Outputs the winner of the game
 	def announce_winner
 		@board.show
+		puts ""
+		puts "**********************************"
 		case @current_turn
 		when @player_one
 			if @ai == false
@@ -284,7 +286,7 @@ class Game
 			clear_screen
 			initialize
 		elsif input == 'N'
-			:exit
+			abort(">Exiting game<")
 		else
 			error
 			end_of_game
